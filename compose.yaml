@@ -1,0 +1,31 @@
+# Local development only: credentials below are throwaway defaults, not secrets.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ledger
+      POSTGRES_USER: ledger
+      POSTGRES_PASSWORD: ledger
+    volumes:
+      - ledger-data:/var/lib/postgresql/data
+    # Not published to the host, so it cannot clash with a PostgreSQL already on port 5432.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ledger -d ledger"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  app:
+    build: .
+    environment:
+      LEDGER_DB_URL: jdbc:postgresql://postgres:5432/ledger
+      LEDGER_DB_USER: ledger
+      LEDGER_DB_PASSWORD: ledger
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  ledger-data:
